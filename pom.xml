@@ -3,7 +3,7 @@
 
   <groupId>io.github.rgleixner</groupId>
   <artifactId>smbj-filesystem</artifactId>
-  <version>0.0.5-SNAPSHOT</version>
+  <version>0.0.5</version>
   <packaging>jar</packaging>
 
   <name>${project.groupId}:${project.artifactId}</name>
@@ -29,6 +29,7 @@
     <connection>scm:git:https://github.com/rgleixner/smbj-filesystem.git</connection>
     <developerConnection>scm:git:https://github.com/rgleixner/smbj-filesystem.git</developerConnection>
     <url>https://github.com/rgleixner/smbj-filesystem/tree/master</url>
+    <tag>smbj-filesystem-0.0.5</tag>
   </scm>
 
   <properties>

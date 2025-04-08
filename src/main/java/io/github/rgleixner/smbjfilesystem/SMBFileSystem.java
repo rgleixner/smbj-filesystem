@@ -176,11 +176,11 @@ public final class SMBFileSystem extends FileSystem {
 		if (!this.isOpen()) {
 			throw new ClosedFileSystemException();
 		}
-		try {
-			String relativePath = path.subpath(1, path.getNameCount()).toString();
-			SMBFileSystem.LOGGER.debug("call share {} with relative path {}", getShare().getSmbPath().toUncPath(),
+		try (DiskShare share = getShare()) {
+			String relativePath = path.toString();
+			SMBFileSystem.LOGGER.debug("call share {} with relative path {}", share.getSmbPath().toUncPath(),
 					relativePath);
-			return action.run(getShare(), relativePath);
+			return action.run(share, relativePath);
 		} catch (SMBApiException e) {
 			SMBFileSystem.LOGGER.trace(e.getMessage(), e);
 			throw SMBExceptionUtil.translateToNIOException(e, path);
@@ -191,13 +191,13 @@ public final class SMBFileSystem extends FileSystem {
 		if (!this.isOpen()) {
 			throw new ClosedFileSystemException();
 		}
-		try {
-			String relativePath = path.subpath(1, path.getNameCount()).toString();
-			String relativePathOther = pathOther.subpath(1, pathOther.getNameCount()).toString();
+		try (DiskShare share = getShare(); DiskShare otherShare = pathOther.getFileSystem().getShare()) {
+			String relativePath = path.toString();
+			String relativePathOther = pathOther.toString();
 			SMBFileSystem.LOGGER.debug("call share {} with relative path {} on other share {} with relative path",
-					getShare().getSmbPath().toUncPath(), relativePath,
-					pathOther.getFileSystem().getShare().getSmbPath().toUncPath(), relativePathOther);
-			return action.run(getShare(), relativePath, pathOther.getFileSystem().getShare(), relativePathOther);
+					share.getSmbPath().toUncPath(), relativePath, otherShare.getSmbPath().toUncPath(),
+					relativePathOther);
+			return action.run(share, relativePath, otherShare, relativePathOther);
 		} catch (SMBApiException e) {
 			SMBFileSystem.LOGGER.trace(e.getMessage(), e);
 			throw SMBExceptionUtil.translateToNIOException(e, path, pathOther);

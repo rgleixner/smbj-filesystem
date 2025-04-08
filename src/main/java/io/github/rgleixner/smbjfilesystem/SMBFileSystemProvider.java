@@ -164,7 +164,10 @@ public final class SMBFileSystemProvider extends FileSystemProvider {
 
 	@Override
 	public Path getPath(URI uri) {
-		return new SMBPath(lookupOrCreateFileSystem(uri, false, false), uri);
+		int indexOfSecondPathSeperator = uri.getPath().indexOf(SMBFileSystem.PATH_SEPARATOR, 1);
+		String path = indexOfSecondPathSeperator == -1 ? SMBFileSystem.PATH_SEPARATOR
+				: uri.getPath().substring(indexOfSecondPathSeperator);
+		return new SMBPath(lookupOrCreateFileSystem(uri, false, false), path);
 	}
 
 	private SMBFileSystem lookupOrCreateFileSystem(URI uri, boolean lookupOnly, boolean createOnly) {

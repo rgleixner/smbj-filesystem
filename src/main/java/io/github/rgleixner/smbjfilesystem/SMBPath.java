@@ -34,17 +34,6 @@ public final class SMBPath implements Path {
 		return (SMBPath) path;
 	}
 
-	SMBPath(SMBFileSystem fileSystem, URI uri) {
-		if (!uri.getScheme().equals(SMBFileSystem.SMB_SCHEME)) {
-			throw new IllegalArgumentException("The provided URI does not point to an SMB resource.");
-		}
-
-		this.fileSystem = fileSystem;
-		this.components = SMBPathUtil.splitPath(uri.getPath());
-		this.absolute = SMBPathUtil.isAbsolutePath(uri.getPath());
-		this.folder = SMBPathUtil.isFolder(uri.getPath());
-	}
-
 	SMBPath(SMBFileSystem fileSystem, String path) {
 		this.fileSystem = fileSystem;
 		this.components = SMBPathUtil.splitPath(path);
@@ -105,7 +94,7 @@ public final class SMBPath implements Path {
 		if (index < 0 || index > this.components.length) {
 			throw new IllegalArgumentException("The provided index is out of bounds.");
 		}
-		String reduced = SMBPathUtil.mergePath(this.components, index, index, false,
+		String reduced = SMBPathUtil.mergePath(this.components, index, index + 1, false,
 				index == this.components.length - 1 && this.folder);
 		return new SMBPath(this.fileSystem, reduced);
 	}
@@ -245,6 +234,11 @@ public final class SMBPath implements Path {
 	@Override
 	public String toString() {
 		return SMBPathUtil.mergePath(this.components, 0, this.components.length, this.absolute, this.folder);
+	}
+
+	public String toUncPath() {
+		return toUri().toString().replace(SMBFileSystem.SMB_SCHEME, "").replace(SMBFileSystem.SCHEME_SEPARATOR, "\\\\")
+				.replace(SMBFileSystem.PATH_SEPARATOR, "\\");
 	}
 
 	@Override

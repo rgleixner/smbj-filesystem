@@ -18,8 +18,6 @@ public final class SMBClientWrapper implements Closeable {
 	private SMBClient client;
 	private AuthenticationContext authenticationContext;
 
-	private Connection connection;
-	private Session session;
 	private DiskShare share;
 
 	public SMBClientWrapper(URI uri, SMBClient client, AuthenticationContext authenticationContext) {
@@ -31,9 +29,10 @@ public final class SMBClientWrapper implements Closeable {
 	}
 
 	DiskShare getShare() throws IOException {
-		if (share == null) {
-			connection = port == -1 ? client.connect(host) : client.connect(host, port);
-			session = connection.authenticate(authenticationContext);
+		if (share == null || !share.isConnected()
+				|| !share.getTreeConnect().getSession().getConnection().isConnected()) {
+			Connection connection = port == -1 ? client.connect(host) : client.connect(host, port);
+			Session session = connection.authenticate(authenticationContext);
 			share = (DiskShare) session.connectShare(shareName);
 		}
 		return share;
@@ -41,9 +40,10 @@ public final class SMBClientWrapper implements Closeable {
 
 	@Override
 	public void close() throws IOException {
-		share.close();
-		session.close();
-		connection.close();
+		try (Connection connection = share.getTreeConnect().getSession().getConnection();
+				Session session = share.getTreeConnect().getSession()) {
+			share.close();
+		}
 	}
 
 }

@@ -10,40 +10,73 @@ import com.hierynomus.smbj.connection.Connection;
 import com.hierynomus.smbj.session.Session;
 import com.hierynomus.smbj.share.DiskShare;
 
-public final class SMBClientWrapper implements Closeable {
+public interface SMBClientWrapper extends Closeable {
 
-	private String host;
-	private int port;
-	private String shareName;
-	private SMBClient client;
-	private AuthenticationContext authenticationContext;
+	public interface SMBShareWrapper extends Closeable {
 
-	private DiskShare share;
-
-	public SMBClientWrapper(URI uri, SMBClient client, AuthenticationContext authenticationContext) {
-		this.host = uri.getHost();
-		this.port = uri.getPort();
-		this.shareName = uri.getPath().substring(1);
-		this.client = client;
-		this.authenticationContext = authenticationContext;
+		DiskShare getSmbShare() throws IOException;
 	}
 
-	DiskShare getShare() throws IOException {
-		if (share == null || !share.isConnected()
-				|| !share.getTreeConnect().getSession().getConnection().isConnected()) {
-			Connection connection = port == -1 ? client.connect(host) : client.connect(host, port);
-			Session session = connection.authenticate(authenticationContext);
-			share = (DiskShare) session.connectShare(shareName);
-		}
-		return share;
-	}
+	SMBShareWrapper getShare() throws IOException;
 
-	@Override
-	public void close() throws IOException {
-		try (Connection connection = share.getTreeConnect().getSession().getConnection();
-				Session session = share.getTreeConnect().getSession()) {
-			share.close();
+	public final class SMBClientWrapperImpl implements SMBClientWrapper {
+
+		public final class SMBShareWrapperImpl implements SMBShareWrapper {
+
+			private DiskShare diskShare;
+
+			SMBShareWrapperImpl(DiskShare diskShare) {
+				this.diskShare = diskShare;
+			}
+
+			@Override
+			public DiskShare getSmbShare() throws IOException {
+				return diskShare;
+			}
+
+			@Override
+			public void close() throws IOException {
+				//
+			}
+
 		}
+
+		private String host;
+		private int port;
+		private String shareName;
+		private SMBClient client;
+		private AuthenticationContext authenticationContext;
+
+		private volatile DiskShare share;
+
+		public SMBClientWrapperImpl(URI uri, SMBClient client, AuthenticationContext authenticationContext) {
+			this.host = uri.getHost();
+			this.port = uri.getPort();
+			this.shareName = uri.getPath().substring(1);
+			this.client = client;
+			this.authenticationContext = authenticationContext;
+		}
+
+		@Override
+		public SMBShareWrapper getShare() throws IOException {
+			if (share == null || !share.isConnected()) {
+				synchronized (this) {
+					if (share == null || !share.isConnected()) {
+						client.close();
+						Connection connection = port == -1 ? client.connect(host) : client.connect(host, port);
+						Session session = connection.authenticate(authenticationContext);
+						share = (DiskShare) session.connectShare(shareName);
+					}
+				}
+			}
+			return new SMBShareWrapperImpl(share);
+		}
+
+		@Override
+		public void close() {
+			client.close();
+		}
+
 	}
 
 }

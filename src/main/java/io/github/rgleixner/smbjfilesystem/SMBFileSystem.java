@@ -17,9 +17,9 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 import com.hierynomus.mssmb2.SMBApiException;
-import com.hierynomus.smbj.SMBClient;
-import com.hierynomus.smbj.auth.AuthenticationContext;
 import com.hierynomus.smbj.share.DiskShare;
+
+import io.github.rgleixner.smbjfilesystem.SMBClientWrapper.SMBShareWrapper;
 
 public final class SMBFileSystem extends FileSystem {
 
@@ -74,11 +74,10 @@ public final class SMBFileSystem extends FileSystem {
 				SMB_SCHEME + SMBFileSystem.SCHEME_SEPARATOR + authority + SMBFileSystem.PATH_SEPARATOR + shareName);
 	}
 
-	SMBFileSystem(SMBFileSystemProvider provider, URI fqn, SMBClient client,
-			AuthenticationContext authenticationContext) {
+	SMBFileSystem(SMBFileSystemProvider provider, URI fqn, SMBClientWrapper clientWrapper) {
 		this.provider = provider;
 		this.fqn = fqn;
-		this.clientWrapper = new SMBClientWrapper(fqn, client, authenticationContext);
+		this.clientWrapper = clientWrapper;
 		this.fileStores = List.of(new SMBFileStore(new SMBPath(this, getSeparator())));
 	}
 
@@ -92,7 +91,7 @@ public final class SMBFileSystem extends FileSystem {
 		if (isOpen()) {
 			try {
 				clientWrapper.close();
-			} catch (IOException e) {
+			} catch (Exception e) {
 				SMBFileSystem.LOGGER.error("failed to close SMB filesystem", e);
 			}
 			this.provider.fileSystemCache.remove(this.fqn);
@@ -168,7 +167,7 @@ public final class SMBFileSystem extends FileSystem {
 		return fqn;
 	}
 
-	DiskShare getShare() throws IOException {
+	SMBShareWrapper getShare() throws IOException {
 		return clientWrapper.getShare();
 	}
 
@@ -176,11 +175,11 @@ public final class SMBFileSystem extends FileSystem {
 		if (!this.isOpen()) {
 			throw new ClosedFileSystemException();
 		}
-		try (DiskShare share = getShare()) {
+		try (SMBShareWrapper share = getShare()) {
 			String relativePath = path.toString();
-			SMBFileSystem.LOGGER.debug("call share {} with relative path {}", share.getSmbPath().toUncPath(),
-					relativePath);
-			return action.run(share, relativePath);
+			SMBFileSystem.LOGGER.debug("call share {} with relative path {}",
+					share.getSmbShare().getSmbPath().toUncPath(), relativePath);
+			return action.run(share.getSmbShare(), relativePath);
 		} catch (SMBApiException e) {
 			SMBFileSystem.LOGGER.trace(e.getMessage(), e);
 			throw SMBExceptionUtil.translateToNIOException(e, path);
@@ -191,13 +190,13 @@ public final class SMBFileSystem extends FileSystem {
 		if (!this.isOpen()) {
 			throw new ClosedFileSystemException();
 		}
-		try (DiskShare share = getShare(); DiskShare otherShare = pathOther.getFileSystem().getShare()) {
+		try (SMBShareWrapper share = getShare(); SMBShareWrapper otherShare = pathOther.getFileSystem().getShare()) {
 			String relativePath = path.toString();
 			String relativePathOther = pathOther.toString();
 			SMBFileSystem.LOGGER.debug("call share {} with relative path {} on other share {} with relative path",
-					share.getSmbPath().toUncPath(), relativePath, otherShare.getSmbPath().toUncPath(),
-					relativePathOther);
-			return action.run(share, relativePath, otherShare, relativePathOther);
+					share.getSmbShare().getSmbPath().toUncPath(), relativePath,
+					otherShare.getSmbShare().getSmbPath().toUncPath(), relativePathOther);
+			return action.run(share.getSmbShare(), relativePath, otherShare.getSmbShare(), relativePathOther);
 		} catch (SMBApiException e) {
 			SMBFileSystem.LOGGER.trace(e.getMessage(), e);
 			throw SMBExceptionUtil.translateToNIOException(e, path, pathOther);

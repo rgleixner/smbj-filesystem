@@ -61,6 +61,8 @@ import com.hierynomus.smbj.share.Directory;
 import com.hierynomus.smbj.share.DiskEntry;
 import com.hierynomus.smbj.share.File;
 
+import io.github.rgleixner.smbjfilesystem.SMBClientWrapper.SMBClientWrapperImpl;
+
 public final class SMBFileSystemProvider extends FileSystemProvider {
 
 	public static final String PROPERTY_FQN = "smbj-filesystem.fqn";
@@ -105,6 +107,11 @@ public final class SMBFileSystemProvider extends FileSystemProvider {
 		return new AuthenticationContext(username, password.toCharArray(), domain);
 	};
 
+	private static Function<Map<String, ?>, SMBClientWrapper> clientWrapperFactory = (Map<String, ?> env) -> {
+		return new SMBClientWrapperImpl((URI) env.get(PROPERTY_FQN), clientFactory.apply(env),
+				authenticationContextFactory.apply(env));
+	};
+
 	private static GSSAuthenticationContext getGSSAuthenticationContext(String jaasServiceName) {
 		try {
 			LoginContext loginContext = new LoginContext(jaasServiceName);
@@ -141,6 +148,10 @@ public final class SMBFileSystemProvider extends FileSystemProvider {
 	public static void setAuthenticationContextFactory(
 			Function<Map<String, ?>, AuthenticationContext> authenticationContextFactory) {
 		SMBFileSystemProvider.authenticationContextFactory = authenticationContextFactory;
+	}
+
+	public static void setClientWrapperFactory(Function<Map<String, ?>, SMBClientWrapper> clientWrapperFactory) {
+		SMBFileSystemProvider.clientWrapperFactory = clientWrapperFactory;
 	}
 
 	public SMBFileSystemProvider() {
@@ -187,9 +198,8 @@ public final class SMBFileSystemProvider extends FileSystemProvider {
 		HashMap<String, Object> newEnv = new HashMap<>(System.getenv());
 		System.getProperties().forEach((key, value) -> newEnv.put(String.valueOf(key), value));
 		newEnv.put(PROPERTY_FQN, fqn);
-		SMBClient client = SMBFileSystemProvider.clientFactory.apply(newEnv);
-		AuthenticationContext authenticationContext = SMBFileSystemProvider.authenticationContextFactory.apply(newEnv);
-		return new SMBFileSystem(this, fqn, client, authenticationContext);
+		SMBClientWrapper smbClientWrapper = clientWrapperFactory.apply(newEnv);
+		return new SMBFileSystem(this, fqn, smbClientWrapper);
 	}
 
 	@Override

@@ -203,7 +203,7 @@ public final class SMBPath implements Path {
 		if (this.isAbsolute()) {
 			return this;
 		}
-		return new SMBPath(this.fileSystem, "/").resolve(this);
+		return new SMBPath(this.fileSystem, SMBFileSystem.PATH_SEPARATOR).resolve(this);
 	}
 
 	@Override
@@ -234,11 +234,6 @@ public final class SMBPath implements Path {
 	@Override
 	public String toString() {
 		return SMBPathUtil.mergePath(this.components, 0, this.components.length, this.absolute, this.folder);
-	}
-
-	public String toUncPath() {
-		return toUri().toString().replace(SMBFileSystem.SMB_SCHEME, "").replace(SMBFileSystem.SCHEME_SEPARATOR, "\\\\")
-				.replace(SMBFileSystem.PATH_SEPARATOR, "\\");
 	}
 
 	@Override

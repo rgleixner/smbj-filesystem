@@ -1,6 +1,7 @@
 package io.github.rgleixner.smbjfilesystem;
 
 import java.net.URI;
+import java.net.URLDecoder;
 import java.net.URLEncoder;
 import java.nio.charset.Charset;
 
@@ -74,5 +75,26 @@ public final class SMBPathUtil {
 	public static String encodeURIComponent(String component, Charset charset) {
 		return URLEncoder.encode(component, charset).replaceAll("\\+", "%20").replaceAll("\\%21", "!")
 				.replaceAll("\\%27", "'").replaceAll("\\%28", "(").replaceAll("\\%29", ")").replaceAll("\\%7E", "~");
+	}
+
+	public static String createUNCFromSmbUri(URI uri, Charset charset) {
+		return decodePath(uri.toString().replace("smb:", "").replace("/", "\\"), charset);
+	}
+
+	public static String decodePath(String path, Charset charset) {
+		StringBuilder sb = new StringBuilder();
+		String[] components = path.split("\\\\");
+		for (String component : components) {
+			sb.append(decodeURIComponent(component, charset)).append("\\");
+		}
+		if (!path.endsWith("\\")) {
+			sb.deleteCharAt(sb.length() - 1);
+		}
+		return sb.toString();
+	}
+
+	public static String decodeURIComponent(String component, Charset charset) {
+		return URLDecoder.decode(component, charset).replaceAll("\\%20", "+").replaceAll("!", "%21")
+				.replaceAll("'", "%27").replaceAll("\\(", "%28").replaceAll("\\)", "%29").replaceAll("~", "%7E");
 	}
 }

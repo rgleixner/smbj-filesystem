@@ -73,8 +73,8 @@ public final class SMBPathUtil {
 	}
 
 	public static String encodeURIComponent(String component, Charset charset) {
-		return URLEncoder.encode(component, charset).replaceAll("\\+", "%20").replaceAll("\\%21", "!")
-				.replaceAll("\\%27", "'").replaceAll("\\%28", "(").replaceAll("\\%29", ")").replaceAll("\\%7E", "~");
+		return URLEncoder.encode(component, charset).replace("+", "%20").replace("%21", "!").replace("%27", "'")
+				.replace("%28", "(").replace("%29", ")").replace("%7E", "~");
 	}
 
 	public static String createUNCFromSmbUri(URI uri, Charset charset) {
@@ -94,7 +94,6 @@ public final class SMBPathUtil {
 	}
 
 	public static String decodeURIComponent(String component, Charset charset) {
-		return URLDecoder.decode(component, charset).replaceAll("\\%20", "+").replaceAll("!", "%21")
-				.replaceAll("'", "%27").replaceAll("\\(", "%28").replaceAll("\\)", "%29").replaceAll("~", "%7E");
+		return URLDecoder.decode(component, charset);
 	}
 }

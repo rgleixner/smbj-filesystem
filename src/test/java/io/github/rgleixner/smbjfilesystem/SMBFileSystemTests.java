@@ -39,21 +39,23 @@ public class SMBFileSystemTests {
 
 	@Test
 	public void testUncPath() {
-		URI uri = SMBPathUtil.createSmbUriFromUNC("\\\\host\\share\\path\\sub\\äöüß", StandardCharsets.UTF_8);
-		Assertions.assertThat(uri.toString()).isEqualTo("smb://host/share/path/sub/%C3%A4%C3%B6%C3%BC%C3%9F");
+		URI uri = SMBPathUtil.createSmbUriFromUNC("\\\\host\\share\\path\\sub\\!'()~ äöüß", StandardCharsets.UTF_8);
+		Assertions.assertThat(uri.toString()).isEqualTo("smb://host/share/path/sub/!'()~%20%C3%A4%C3%B6%C3%BC%C3%9F");
 
-		String unc = SMBPathUtil.createUNCFromSmbUri(URI.create("smb://host/share/path/sub/%C3%A4%C3%B6%C3%BC%C3%9F"),
-				StandardCharsets.UTF_8);
-		Assertions.assertThat(unc).isEqualTo("\\\\host\\share\\path\\sub\\äöüß");
+		String unc = SMBPathUtil.createUNCFromSmbUri(
+				URI.create("smb://host/share/path/sub/!'()~%20%C3%A4%C3%B6%C3%BC%C3%9F"), StandardCharsets.UTF_8);
+		Assertions.assertThat(unc).isEqualTo("\\\\host\\share\\path\\sub\\!'()~ äöüß");
 
-		Path p1 = Path.of(URI.create("smb://host/share/path/sub/äöüß"));
-		Path p2 = Path.of(URI.create("smb://host/share/path/sub/%C3%A4%C3%B6%C3%BC%C3%9F"));
+		Path p1 = Path.of(URI.create("smb://host/share/path/sub/!'()~%20äöüß"));
+		Path p2 = Path.of(URI.create("smb://host/share/path/sub/%21%27%28%29%7E%20%C3%A4%C3%B6%C3%BC%C3%9F"));
 
-		Assertions.assertThat(p1.toString()).isEqualTo("/path/sub/äöüß");
-		Assertions.assertThat(p2.toString()).isEqualTo("/path/sub/äöüß");
+		Assertions.assertThat(p1.toString()).isEqualTo("/path/sub/!'()~ äöüß");
+		Assertions.assertThat(p2.toString()).isEqualTo("/path/sub/!'()~ äöüß");
 
-		Assertions.assertThat(p1.toUri().toString()).isEqualTo("smb://host/share/path/sub/%C3%A4%C3%B6%C3%BC%C3%9F");
-		Assertions.assertThat(p2.toUri().toString()).isEqualTo("smb://host/share/path/sub/%C3%A4%C3%B6%C3%BC%C3%9F");
+		Assertions.assertThat(p1.toUri().toString())
+				.isEqualTo("smb://host/share/path/sub/!'()~%20%C3%A4%C3%B6%C3%BC%C3%9F");
+		Assertions.assertThat(p2.toUri().toString())
+				.isEqualTo("smb://host/share/path/sub/!'()~%20%C3%A4%C3%B6%C3%BC%C3%9F");
 	}
 
 }
